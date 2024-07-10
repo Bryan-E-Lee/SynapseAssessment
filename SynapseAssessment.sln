@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SynapseAssessment", "SynapseAssessment\SynapseAssessment.csproj", "{6A73D3DF-9838-4E49-BB12-891B5C06A0EA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SynapseAssessment.Test", "SynapseAssessment.Test\SynapseAssessment.Test.csproj", "{C7A3DE85-9209-43C1-9F69-26A941DA0C2B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6A73D3DF-9838-4E49-BB12-891B5C06A0EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A73D3DF-9838-4E49-BB12-891B5C06A0EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A73D3DF-9838-4E49-BB12-891B5C06A0EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A73D3DF-9838-4E49-BB12-891B5C06A0EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7A3DE85-9209-43C1-9F69-26A941DA0C2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7A3DE85-9209-43C1-9F69-26A941DA0C2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7A3DE85-9209-43C1-9F69-26A941DA0C2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7A3DE85-9209-43C1-9F69-26A941DA0C2B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0F9577A8-5E9A-4427-91E1-4396ED1C202E}
+	EndGlobalSection
+EndGlobal
