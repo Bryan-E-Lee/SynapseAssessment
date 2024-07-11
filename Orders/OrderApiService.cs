@@ -9,10 +9,10 @@ namespace Orders
     public class OrderApiService : IOrderApiService
     {
         private readonly IHttpClientFactory httpClientFactory;
-        private readonly OrderProcessorApiConfig config;
+        private readonly OrderApiConfig config;
         private readonly ILogger logger;
 
-        public OrderApiService(IHttpClientFactory httpClientFactory, OrderProcessorApiConfig config, ILogger logger)
+        public OrderApiService(IHttpClientFactory httpClientFactory, OrderApiConfig config, ILogger logger)
         {
             this.httpClientFactory = httpClientFactory;
             this.config = config;
