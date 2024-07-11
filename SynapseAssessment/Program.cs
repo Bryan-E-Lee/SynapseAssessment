@@ -105,7 +105,7 @@ namespace Synapse.OrdersExample
         /// <returns>The newly processed order.</returns>
         static JObject ProcessOrder(JObject order)
         {
-            var items = order["Items"]?.ToObject<JArray>() ?? new(); //Consider having an invalid schema generate an exception rather than be handled gracefully.
+            var items = order["Items"]?.ToObject<JArray>() ?? []; //Consider having an invalid schema generate an exception rather than be handled gracefully.
 
             var orderId = order["OrderId"];
             if (orderId == null)
