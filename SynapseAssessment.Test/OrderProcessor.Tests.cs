@@ -1,27 +1,31 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using Orders;
+using Orders.Entities;
+using Orders.Services;
 
 namespace SynapseAssessment.Test
 {
+    /// <summary>
+    /// We should test the order api as well, but given the expected time constraints we will avoid doing that for the
+    /// purposes of completing this assessment.
+    /// </summary>
     [TestClass]
     public class ProgramTests
     {
         //Compiler will not recognize the TestInitialize() attribute as initializing these properties
 #pragma warning disable 8618
-        private Mock<ILogger> mockLogger;
-        private Mock<IOrderApiService> mockApiService;
+        private Mock<ILogger<BasicOrderProcessor>> mockLogger;
+        private Mock<IOrderAlertService> mockApiService;
         private Queue<Order> retryQueue;
 #pragma warning restore 8618
 
         [TestInitialize]
         public void BeforeTest()
         {
-            mockLogger = new Mock<ILogger>();
+            mockLogger = new Mock<ILogger<BasicOrderProcessor>>();
 
-            mockApiService = new Mock<IOrderApiService>();
-            mockApiService.Setup(mas => mas.FetchMedicalEquipmentOrders()).ReturnsAsync([]);
+            mockApiService = new Mock<IOrderAlertService>();
             mockApiService.Setup(mas => mas.SendAlertMessage(It.IsAny<Item>(), It.IsAny<string>()));
             mockApiService.Setup(mas => mas.SendAlertForUpdatedOrder(It.IsAny<Order>()));
 
@@ -32,10 +36,10 @@ namespace SynapseAssessment.Test
         public async Task Process_NoOrders_Succeeds()
         {
             //Arrange
-            var orderProcessor = new OrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
+            var orderProcessor = new BasicOrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
 
             //Act / Assert
-            await orderProcessor.Process();
+            await orderProcessor.Process([]);
         }
 
         [TestMethod]
@@ -53,11 +57,10 @@ namespace SynapseAssessment.Test
                 OrderId = "1",
                 Items = [item]
             };
-            mockApiService.Setup(mas => mas.FetchMedicalEquipmentOrders()).ReturnsAsync([order]);
-            var orderProcessor = new OrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
+            var orderProcessor = new BasicOrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
 
             //Act
-            await orderProcessor.Process();
+            await orderProcessor.Process([order]);
 
             //Assert
             mockApiService.Verify(mas => mas.SendAlertMessage(item, order.OrderId), Times.Once);
@@ -80,11 +83,10 @@ namespace SynapseAssessment.Test
                 OrderId = "1",
                 Items = [item]
             };
-            mockApiService.Setup(mas => mas.FetchMedicalEquipmentOrders()).ReturnsAsync([order]);
-            var orderProcessor = new OrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
+            var orderProcessor = new BasicOrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
 
             //Act
-            await orderProcessor.Process();
+            await orderProcessor.Process([order]);
 
             //Assert
             Assert.AreEqual(1, item.DeliveryNotification);
@@ -105,11 +107,10 @@ namespace SynapseAssessment.Test
                 OrderId = "1",
                 Items = [item]
             };
-            mockApiService.Setup(mas => mas.FetchMedicalEquipmentOrders()).ReturnsAsync([order]);
-            var orderProcessor = new OrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
+            var orderProcessor = new BasicOrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
 
             //Act
-            await orderProcessor.Process();
+            await orderProcessor.Process([order]);
 
             //Assert
             Assert.AreEqual(0, item.DeliveryNotification);
@@ -136,11 +137,10 @@ namespace SynapseAssessment.Test
                 OrderId = "1",
                 Items = [item1, item2]
             };
-            mockApiService.Setup(mas => mas.FetchMedicalEquipmentOrders()).ReturnsAsync([order]);
-            var orderProcessor = new OrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
+            var orderProcessor = new BasicOrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
 
             //Act
-            await orderProcessor.Process();
+            await orderProcessor.Process([order]);
 
             //Assert
             mockApiService.Verify(mas => mas.SendAlertMessage(item1, order.OrderId), Times.Once);
@@ -169,11 +169,10 @@ namespace SynapseAssessment.Test
                 OrderId = "1",
                 Items = [item1, item2]
             };
-            mockApiService.Setup(mas => mas.FetchMedicalEquipmentOrders()).ReturnsAsync([order]);
-            var orderProcessor = new OrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
+            var orderProcessor = new BasicOrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
 
             //Act
-            await orderProcessor.Process();
+            await orderProcessor.Process([order]);
 
             //Assert
             Assert.AreEqual(1, item1.DeliveryNotification);
@@ -218,11 +217,10 @@ namespace SynapseAssessment.Test
                 OrderId = "2",
                 Items = [item3, item4]
             };
-            mockApiService.Setup(mas => mas.FetchMedicalEquipmentOrders()).ReturnsAsync([order1, order2]);
-            var orderProcessor = new OrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
+            var orderProcessor = new BasicOrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
 
             //Act
-            await orderProcessor.Process();
+            await orderProcessor.Process([order1, order2]);
 
             //Assert
             mockApiService.Verify(mas => mas.SendAlertMessage(item1, order1.OrderId), Times.Once);
@@ -248,11 +246,10 @@ namespace SynapseAssessment.Test
                 OrderId = string.Empty,
                 Items = [item]
             };
-            mockApiService.Setup(mas => mas.FetchMedicalEquipmentOrders()).ReturnsAsync([order]);
-            var orderProcessor = new OrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
+            var orderProcessor = new BasicOrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
 
             //Act
-            await orderProcessor.Process();
+            await orderProcessor.Process([order]);
 
             //Assert
             mockApiService.Verify(mas => mas.SendAlertMessage(item, order.OrderId), Times.Never);
@@ -267,11 +264,10 @@ namespace SynapseAssessment.Test
             {
                 OrderId = string.Empty
             };
-            mockApiService.Setup(mas => mas.FetchMedicalEquipmentOrders()).ReturnsAsync([order]);
-            var orderProcessor = new OrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
+            var orderProcessor = new BasicOrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
 
             //Act
-            await orderProcessor.Process();
+            await orderProcessor.Process([order]);
 
             //Assert
             Assert.AreEqual(1, retryQueue.Count);
@@ -290,11 +286,10 @@ namespace SynapseAssessment.Test
             {
                 OrderId = string.Empty
             };
-            mockApiService.Setup(mas => mas.FetchMedicalEquipmentOrders()).ReturnsAsync([order1, order2]);
-            var orderProcessor = new OrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
+            var orderProcessor = new BasicOrderProcessor(mockApiService.Object, mockLogger.Object, retryQueue);
 
             //Act
-            await orderProcessor.Process();
+            await orderProcessor.Process([order1, order2]);
 
             //Assert
             Assert.AreEqual(2, retryQueue.Count);

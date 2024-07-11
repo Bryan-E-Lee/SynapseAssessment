@@ -15,7 +15,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Orders\Orders.csproj" />
-    <ProjectReference Include="..\SynapseAssessment\SynapseAssessment.csproj" />
   </ItemGroup>
 
 </Project>

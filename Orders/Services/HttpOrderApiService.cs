@@ -1,18 +1,19 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Net.Http;
+using Orders.Config;
+using Orders.Entities;
 using System.Text;
 
-namespace Orders
+namespace Orders.Services
 {
-    public class OrderApiService : IOrderApiService
+    public class HttpOrderApiService : IOrderAlertService, IOrderRetriever
     {
         private readonly IHttpClientFactory httpClientFactory;
         private readonly OrderApiConfig config;
-        private readonly ILogger logger;
+        private readonly ILogger<HttpOrderApiService> logger;
 
-        public OrderApiService(IHttpClientFactory httpClientFactory, OrderApiConfig config, ILogger logger)
+        public HttpOrderApiService(IHttpClientFactory httpClientFactory, OrderApiConfig config, ILogger<HttpOrderApiService> logger)
         {
             this.httpClientFactory = httpClientFactory;
             this.config = config;

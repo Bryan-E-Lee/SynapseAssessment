@@ -1,4 +1,4 @@
-﻿namespace Orders
+﻿namespace Orders.Config
 {
     public sealed class OrderApiConfig
     {

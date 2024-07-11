@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orders;
-using SynapseAssessment;
+using Orders.Config;
+using Orders.Entities;
+using Orders.Services;
 
 namespace Synapse.OrdersExample
 {
@@ -25,6 +25,16 @@ namespace Synapse.OrdersExample
                 builder.AddFile(options => options.RootPath = AppContext.BaseDirectory);
             });
             services.AddHttpClient();
+            services.AddSingleton<IOrderRetriever, HttpOrderApiService>();
+            services.AddSingleton<IOrderAlertService, HttpOrderApiService>();
+            services.AddSingleton<IOrderProcessor, BasicOrderProcessor>();
+            var orderApiConfig = new OrderApiConfig();
+            config.GetSection("OrderApis").Bind(orderApiConfig);
+
+            services.AddSingleton(orderApiConfig);
+            //Normally this isn't appropriate for prod, but I feel as though adding a proper container would be outside the assessment scope.
+            services.AddSingleton(new Queue<Order>());
+
             return services.BuildServiceProvider();
         }
 
@@ -34,8 +44,6 @@ namespace Synapse.OrdersExample
             var config = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json")
                 .Build();
-            var orderApiConfig = new OrderApiConfig();
-            config.GetSection("OrderApis").Bind(orderApiConfig);
             var serviceProvider = BuildServices(config);
             var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("Start of App");
@@ -43,12 +51,13 @@ namespace Synapse.OrdersExample
             try
             {
                 var factory = serviceProvider.GetRequiredService<IHttpClientFactory>();
-                var failedOrders = new Queue<Order>(); //See TODO below.
+                var orderApiConfig = serviceProvider.GetRequiredService<OrderApiConfig>();
 
-                var apiService = new OrderApiService(factory, orderApiConfig, logger);
+                var apiService = serviceProvider.GetRequiredService<IOrderRetriever>();
+                var processor = serviceProvider.GetRequiredService<IOrderProcessor>();
 
-                var processor = new OrderProcessor(apiService, logger, failedOrders);
-                await processor.Process();
+                var medicalEquipmentOrders = await apiService.FetchMedicalEquipmentOrders();
+                await processor.Process(medicalEquipmentOrders);
             }
             catch (Exception e)
             {

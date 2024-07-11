@@ -1,18 +1,18 @@
 ﻿using Microsoft.Extensions.Logging;
-using Orders;
+using Orders.Entities;
 
-namespace SynapseAssessment
+namespace Orders.Services
 {
     /// <summary>
     /// A service for processing orders.
     /// </summary>
-    public class OrderProcessor
+    public class BasicOrderProcessor : IOrderProcessor
     {
-        private readonly IOrderApiService apiService;
-        private readonly ILogger logger;
+        private readonly IOrderAlertService apiService;
+        private readonly ILogger<BasicOrderProcessor> logger;
         private readonly Queue<Order> retryQueue;
 
-        public OrderProcessor(IOrderApiService apiService, ILogger logger, Queue<Order> retryQueue)
+        public BasicOrderProcessor(IOrderAlertService apiService, ILogger<BasicOrderProcessor> logger, Queue<Order> retryQueue)
         {
             this.apiService = apiService;
             this.logger = logger;
@@ -20,16 +20,11 @@ namespace SynapseAssessment
         }
 
         /// <summary>
-        /// Performs the following tasks in order:
-        /// 1. Get a list of orders from the API
-        /// 2. Check if the order is in a delivered state. 
-        ///     2a. If the order is delivered, then send a delivery alert and increment the order's "deliveryNotification" property.
-        ///     2b. If the order is not delivered, then ignore and continue processing the remaining items.
+        /// Processes the input orders, submitting alerts when they have been delivered and signals when they have been updated.
         /// </summary>
-        public async Task Process()
+        /// <param name="medicalEquipmentOrders">The collection of orders to process</param>
+        public async Task Process(IEnumerable<Order> medicalEquipmentOrders) //Rely on interfaces, return concretions
         {
-            var medicalEquipmentOrders = await apiService.FetchMedicalEquipmentOrders();
-
             var tasks = medicalEquipmentOrders
                 .Select(order =>
                 {
@@ -75,17 +70,15 @@ namespace SynapseAssessment
         /// </summary>
         /// <param name="item">The item to be checked.</param>
         /// <returns>True if delivered, else false.</returns>
-        bool IsItemDelivered(Item item)
-        {
-            return item.Status?.Equals("Delivered", StringComparison.OrdinalIgnoreCase)
+        private bool IsItemDelivered(Item item)
+            => item.Status?.Equals("Delivered", StringComparison.OrdinalIgnoreCase)
                 ?? false;
-        }
 
         /// <summary>
         /// Increments an item's delivery notification count.
         /// </summary>
         /// <param name="item">The item to update.</param>
-        void IncrementDeliveryNotification(Item item)
+        private void IncrementDeliveryNotification(Item item)
         {
             //Consider moving this to a member in the item class. Then again, it is also supposed to be a POJO / POCO so I can understand resistance to that change.
             item.DeliveryNotification++;

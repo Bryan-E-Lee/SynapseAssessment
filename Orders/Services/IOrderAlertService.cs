@@ -1,8 +1,10 @@
-﻿namespace Orders
+﻿using Orders.Entities;
+
+namespace Orders.Services
 {
-    public interface IOrderApiService
+
+    public interface IOrderAlertService
     {
-        public Task<List<Order>> FetchMedicalEquipmentOrders();
         public Task SendAlertMessage(Item item, string orderId);
         public Task SendAlertForUpdatedOrder(Order order);
     }
