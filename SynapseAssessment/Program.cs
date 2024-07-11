@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Orders;
 using System.Text;
 
 namespace Synapse.OrdersExample
@@ -15,12 +17,10 @@ namespace Synapse.OrdersExample
     {
         const int SuccessCode = 0;
         const int CatastrophicErrorCode = 1;
-        const int PartialFailureErrorCode = 2;
 
         const string OrdersApiUrl = "https://orders-api.com/orders";
         const string AlertApiUrl = "https://alert-api.com/alerts";
         const string UpdateApiUrl = "https://update-api.com/update";
-
 
         /*
          * The below code should be handled through a DI container and there should be
@@ -54,7 +54,7 @@ namespace Synapse.OrdersExample
                     .Select(order =>
                     {
                         var updatedOrder = ProcessOrder(order);
-                        return SendAlertAndUpdateOrder(updatedOrder);
+                        return SendAlertForUpdatedOrder(updatedOrder);
                     })
                     .ToList();
                 await Task.WhenAll(tasks);
@@ -65,7 +65,6 @@ namespace Synapse.OrdersExample
                 return CatastrophicErrorCode;
             }
 
-            logger.LogInformation("Results sent to relevant APIs.");
             return SuccessCode;
         }
 
@@ -73,7 +72,7 @@ namespace Synapse.OrdersExample
         /// Retrieves medical equipment orders from an external API.
         /// </summary>
         /// <returns>A list of medical equipment orders as dynamic JSON objects.</returns>
-        static async Task<JObject[]> FetchMedicalEquipmentOrders()
+        static async Task<List<Order>> FetchMedicalEquipmentOrders()
         {
             using var httpClient = new HttpClient();
             try
@@ -82,7 +81,7 @@ namespace Synapse.OrdersExample
                 if (response.IsSuccessStatusCode)
                 {
                     var ordersData = await response.Content.ReadAsStringAsync();
-                    return JArray.Parse(ordersData).ToObject<JObject[]>()
+                    return JsonConvert.DeserializeObject<List<Order>>(ordersData)
                         ?? [];
                 }
                 else
@@ -103,22 +102,19 @@ namespace Synapse.OrdersExample
         /// </summary>
         /// <param name="order">The order to process.</param>
         /// <returns>The newly processed order.</returns>
-        static JObject ProcessOrder(JObject order)
+        static Order ProcessOrder(Order order)
         {
-            var items = order["Items"]?.ToObject<JArray>() ?? []; //Consider having an invalid schema generate an exception rather than be handled gracefully.
-
-            var orderId = order["OrderId"];
-            if (orderId == null)
+            if (string.IsNullOrEmpty(order.OrderId))
             {
                 logger.LogError("Received order with no identifier.");
-                throw new ArgumentNullException("OrderId"); //TODO: Consider a better way of gracefully handling an error here. Right now there is no outer catch that will not trigger a catastrophic error.
+                throw new InvalidOperationException("Attempted to process order with no order id."); //TODO: Consider a better way of gracefully handling an error here. Right now there is no outer catch that will not trigger a catastrophic error.
             }
 
-            foreach (var item in items)
+            foreach (var item in order.Items)
             {
                 if (IsItemDelivered(item)) //Consider inverting conditional to reduce cyclomatic complexity.
                 {
-                    SendAlertMessage(item, orderId.ToString());
+                    SendAlertMessage(item, order.OrderId.ToString());
                     IncrementDeliveryNotification(item);
                 }
             }
@@ -131,9 +127,9 @@ namespace Synapse.OrdersExample
         /// </summary>
         /// <param name="item">The item to be checked.</param>
         /// <returns>True if delivered, else false.</returns>
-        static bool IsItemDelivered(JToken item)
+        static bool IsItemDelivered(Item item)
         {
-            return item["Status"]?.ToString().Equals("Delivered", StringComparison.OrdinalIgnoreCase)
+            return item.Status?.Equals("Delivered", StringComparison.OrdinalIgnoreCase)
                 ?? false;
         }
 
@@ -141,24 +137,24 @@ namespace Synapse.OrdersExample
         /// Sends an alert message that an item has been delievered.
         /// </summary>
         /// <param name="orderId">The order id for the alert.</param>
-        static void SendAlertMessage(JToken item, string orderId)
+        static void SendAlertMessage(Item item, string orderId)
         {
             using var httpClient = new HttpClient();
             var alertData = new
             {
-                Message = $@"Alert for delivered item: Order {orderId}, Item: {item["Description"]}, 
-                            Delivery Notifications: {item["deliveryNotification"]}"
+                Message = $@"Alert for delivered item: Order {orderId}, Item: {item.Description}, 
+                            Delivery Notifications: {item.DeliveryNotification}"
             };
             var content = new StringContent(JObject.FromObject(alertData).ToString(), Encoding.UTF8, "application/json");
             var response = httpClient.PostAsync(AlertApiUrl, content).Result;
 
             if (response.IsSuccessStatusCode)
             {
-                logger.LogInformation($"Alert sent for delivered item: {item["Description"]}");
+                logger.LogInformation($"Alert sent for delivered item: {item.Description}");
             }
             else
             {
-                logger.LogError($"Failed to send alert for delivered item: {item["Description"]}");
+                logger.LogError($"Failed to send alert for delivered item: {item.Description}");
             }
         }
 
@@ -166,30 +162,32 @@ namespace Synapse.OrdersExample
         /// Increments an item's delivery notification count.
         /// </summary>
         /// <param name="item">The item to update.</param>
-        static void IncrementDeliveryNotification(JToken item)
+        static void IncrementDeliveryNotification(Item item) 
         {
-            var deliveryNotificationCount = item["deliveryNotification"]?.Value<int>() ?? 0;
-            item["deliveryNotification"] = deliveryNotificationCount + 1;
+            //Consider moving this to a member in the item class. Then again, it is also supposed to be a POJO / POCO.
+            item.DeliveryNotification++;
         }
 
         /// <summary>
-        /// Sends an alert 
+        /// Sends an alert that an order has been delievered.
         /// </summary>
-        /// <param name="order"></param>
+        /// <param name="order">The order to generate an alert for.</param>
         /// <returns></returns>
-        static async Task SendAlertAndUpdateOrder(JObject order)
+        static async Task SendAlertForUpdatedOrder(Order order)
         {
+            var serializedOrder = JsonConvert.SerializeObject(order);
+            var content = new StringContent(serializedOrder, Encoding.UTF8, "application/json");
+
             using var httpClient = new HttpClient();
-            var content = new StringContent(order.ToString(), Encoding.UTF8, "application/json");
             var response = await httpClient.PostAsync(UpdateApiUrl, content);
 
             if (response.IsSuccessStatusCode)
             {
-                logger.LogInformation($"Updated order sent for processing: OrderId {order["OrderId"]}");
+                logger.LogInformation($"Updated order sent for processing: OrderId {order.OrderId}");
             }
             else
             {
-                logger.LogError($"Failed to send updated order for processing: OrderId {order["OrderId"]}");
+                logger.LogError($"Error sending updated order for processing: OrderId {order.OrderId}");
             }
         }
     }
