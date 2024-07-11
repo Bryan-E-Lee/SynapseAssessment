@@ -1,9 +1,6 @@
-﻿using System;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using System.Text;
 
 namespace Synapse.OrdersExample
 {
