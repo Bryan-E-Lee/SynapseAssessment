@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Orders.Config;
 using Orders.Entities;
 using Orders.Services;
+using System.Collections.Concurrent;
 
 namespace Synapse.OrdersExample
 {
@@ -33,7 +34,7 @@ namespace Synapse.OrdersExample
 
             services.AddSingleton(orderApiConfig);
             //Normally this isn't appropriate for prod, but I feel as though adding a proper container would be outside the assessment scope.
-            services.AddSingleton(new Queue<Order>());
+            services.AddSingleton(new ConcurrentQueue<Order>());
 
             return services.BuildServiceProvider();
         }

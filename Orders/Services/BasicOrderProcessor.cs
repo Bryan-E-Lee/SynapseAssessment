@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Orders.Entities;
+using System.Collections.Concurrent;
 
 namespace Orders.Services
 {
@@ -10,9 +11,9 @@ namespace Orders.Services
     {
         private readonly IOrderAlertService apiService;
         private readonly ILogger<BasicOrderProcessor> logger;
-        private readonly Queue<Order> retryQueue;
+        private readonly ConcurrentQueue<Order> retryQueue;
 
-        public BasicOrderProcessor(IOrderAlertService apiService, ILogger<BasicOrderProcessor> logger, Queue<Order> retryQueue)
+        public BasicOrderProcessor(IOrderAlertService apiService, ILogger<BasicOrderProcessor> logger, ConcurrentQueue<Order> retryQueue)
         {
             this.apiService = apiService;
             this.logger = logger;

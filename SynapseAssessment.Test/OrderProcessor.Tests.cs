@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Orders.Entities;
 using Orders.Services;
+using System.Collections.Concurrent;
 
 namespace SynapseAssessment.Test
 {
@@ -17,7 +18,7 @@ namespace SynapseAssessment.Test
 #pragma warning disable 8618
         private Mock<ILogger<BasicOrderProcessor>> mockLogger;
         private Mock<IOrderAlertService> mockApiService;
-        private Queue<Order> retryQueue;
+        private ConcurrentQueue<Order> retryQueue;
 #pragma warning restore 8618
 
         [TestInitialize]
@@ -271,7 +272,8 @@ namespace SynapseAssessment.Test
 
             //Assert
             Assert.AreEqual(1, retryQueue.Count);
-            Assert.AreEqual(order, retryQueue.Peek());
+            Assert.IsTrue(retryQueue.TryPeek(out var queuedOrder));
+            Assert.AreEqual(order, queuedOrder);
         }
 
         [TestMethod]
